@@ -6,7 +6,7 @@ struct TodoView: View {
     var body: some View {
         TodosStore.dispatchConsumer { dispatch in
             HStack {
-                Button(action: { _ = dispatch(.checkBoxToggled(state.id)) }) {
+                Button(action: { dispatch(.checkBoxToggled(state.id)) }) {
                     Image(systemName: state.isComplete ? "checkmark.square" : "square")
                 }
                 .buttonStyle(.plain)
@@ -16,7 +16,7 @@ struct TodoView: View {
                     text: Binding(get: {
                         state.description
                     }, set: { value in
-                        _ = dispatch(.textFieldChanged(state.id, value))
+                        dispatch(.textFieldChanged(state.id, value))
                     })
                 )
             }

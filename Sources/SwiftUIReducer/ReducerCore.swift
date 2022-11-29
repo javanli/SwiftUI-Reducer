@@ -36,8 +36,10 @@ public class Dispatcher<ActionType> : ObservableObject {
             }
         }
     }
-    @discardableResult
-    func dispatch(_ action : ActionType) -> Task<Void, Never> {
-        return _dispatch(action)
+    func dispatch(_ action : ActionType) {
+        _ = _dispatch(action)
+    }
+    func dispatchAsync(_ action : ActionType) async -> Void {
+        await _dispatch(action).value
     }
 }

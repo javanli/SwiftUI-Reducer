@@ -21,8 +21,11 @@ open class Store<StateType, ActionType> : ObservableObject {
         state = StateWrapper(value: defaultValue)
         dispatcher = Dispatcher(state: state, reducer: reducer, asyncReducer: asyncReducer)
     }
-    public func dispatch(action:ActionType) -> Task<Void, Never> {
-        return dispatcher.dispatch(action)
+    public func dispatch(_ action : ActionType) {
+        dispatcher.dispatch(action)
+    }
+    public func dispatchAsync(_ action : ActionType) async -> Void {
+        await dispatcher.dispatchAsync(action)
     }
     public func stateValue() -> StateType {
         return state.value
@@ -34,16 +37,21 @@ open class Store<StateType, ActionType> : ObservableObject {
     public func provider<Content : View>(@ViewBuilder contents:@escaping ()->Content) -> some View {
         return ReducerProvider(store: self, contents: contents)
     }
-    public static func dispatchConsumer<Content:View>(@ViewBuilder contents: @escaping (@escaping (ActionType) -> Task<Void, Never>) -> Content) -> some View {
+    public static func asyncDispatchConsumer<Content:View>(@ViewBuilder contents: @escaping (@escaping (ActionType) async -> Void) -> Content) -> some View {
+        return AsyncDispatchConsumer(contents: contents)
+    }
+    public static func dispatchConsumer<Content:View>(@ViewBuilder contents: @escaping (@escaping (ActionType) -> Void) -> Content) -> some View {
         return DispatchConsumer(contents: contents)
     }
     public static func stateConsumer<Content:View>(@ViewBuilder contents: @escaping (StateType) -> Content) -> some View {
         return StateConsumer(contents: contents)
     }
-    public static func consumer<Content:View>(@ViewBuilder contents: @escaping (StateType,@escaping (ActionType) -> Task<Void, Never>) -> Content) -> some View {
+    public static func consumer<Content:View>(@ViewBuilder contents: @escaping (StateType,@escaping (ActionType) -> Void, @escaping (ActionType) async -> Void) -> Content) -> some View {
         return StateConsumer { (state : StateType) in
-            DispatchConsumer<ActionType,Content> { dispatch in
-                contents(state,dispatch)
+            AsyncDispatchConsumer<ActionType,DispatchConsumer> { dispatchAsync in
+                DispatchConsumer<ActionType,Content> { dispatch in
+                    contents(state,dispatch,dispatchAsync)
+                }
             }
         }
     }
@@ -69,13 +77,24 @@ public struct StateConsumer<StateType, Content : View> : View {
 
 public struct DispatchConsumer<ActionType, Content : View> : View {
     @EnvironmentObject public var dispatcher : Dispatcher<ActionType>
-    private let contents: (@escaping(ActionType) -> Task<Void, Never>) -> Content
+    private let contents: (@escaping(ActionType) -> Void) -> Content
 
-    public init(@ViewBuilder contents: @escaping (@escaping (ActionType) -> Task<Void, Never>) -> Content) {
+    public init(@ViewBuilder contents: @escaping (@escaping (ActionType) -> Void) -> Content) {
         self.contents = contents
     }
     public var body: some View {
         contents(dispatcher.dispatch)
+    }
+}
+public struct AsyncDispatchConsumer<ActionType, Content : View> : View {
+    @EnvironmentObject public var dispatcher : Dispatcher<ActionType>
+    private let contents: (@escaping(ActionType) async -> Void) -> Content
+
+    public init(@ViewBuilder contents: @escaping (@escaping (ActionType) async -> Void) -> Content) {
+        self.contents = contents
+    }
+    public var body: some View {
+        contents(dispatcher.dispatchAsync)
     }
 }
 

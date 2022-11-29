@@ -3,7 +3,7 @@ import SwiftUIReducer
 
 struct AppView: View {
     var body: some View {
-        TodosStore.consumer { state, dispatch in
+        TodosStore.consumer { state, dispatch, _ in
             NavigationView {
                 VStack(alignment: .leading) {
                     Picker(
@@ -11,7 +11,7 @@ struct AppView: View {
                         selection: Binding(get: {
                             state.filter
                         }, set: { value, trans in
-                            _ = dispatch(.filterPicked(value))
+                            dispatch(.filterPicked(value))
                         })
                         .animation()
                     ) {
@@ -26,8 +26,8 @@ struct AppView: View {
                         ForEach(state.filteredTodos) { todo in
                             TodoView(state: todo)
                         }
-                        .onDelete { _ = dispatch(.delete($0)) }
-                        .onMove { _ = dispatch(.move($0, $1)) }
+                        .onDelete { dispatch(.delete($0)) }
+                        .onMove { dispatch(.move($0, $1)) }
                     }
                 }
                 .navigationTitle("Todos")
@@ -35,10 +35,10 @@ struct AppView: View {
                     trailing: HStack(spacing: 20) {
                         EditButton()
                         Button("Clear Completed") {
-                            _ = dispatch(.clearCompletedButtonTapped)
+                            dispatch(.clearCompletedButtonTapped)
                         }
                         .disabled(state.isClearCompletedButtonDisabled)
-                        Button("Add Todo") { _ = dispatch(.addTodoButtonTapped) }
+                        Button("Add Todo") { dispatch(.addTodoButtonTapped) }
                     }
                 )
             }
@@ -67,7 +67,7 @@ struct AppView_Previews: PreviewProvider {
                 isComplete: true
             ),
         ]
-        var store = TodosStore(defaultValue: state)
+        let store = TodosStore(defaultValue: state)
         return store.provider {
             AppView()
         }

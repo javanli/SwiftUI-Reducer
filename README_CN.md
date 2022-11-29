@@ -67,9 +67,9 @@ DemoStore(defaultValue: DemoState()).provider {
 ```swift
 struct AppView: View {
     var body: some View {
-        DemoStore.consumer { state, dispatch in
+        DemoStore.consumer { state, dispatch, dispatchAsync in
             Button("\(state.cnt)") {
-                _ = dispatch(.add)
+                dispatch(.add)
             }
         }
     }
